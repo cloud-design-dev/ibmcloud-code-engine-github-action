@@ -1,5 +1,5 @@
 name: Deploy or update Code Engine workloads
-description: Github action to create or update applications, batch jobs and serverless functions in IBM Cloud Code Engine
+description: Github action to create or update IBM Cloud Code Engine applications, batch jobs and serverless functions
 author: Ryan Tiffany
 
 branding:
@@ -14,23 +14,24 @@ inputs:
   resource_group:
     description: The IBM Cloud Resource Group associated with the Code Engine project.
     required: false
-    default: Default
+    default: "Default"
 
   code_engine_region:
     description: The Region where the Code Engine project is located.
     required: true
+    default: "us-south"
 
   code_engine_project:
-    description: The name of the Code Engine Project where the workload is deployed. 
+    description: The name of the Code Engine Project where the workload will be deployed. 
     required: true
 
-# App, Function or Job Specific inputs
+# Workload Specific inputs
   workload_type:
-    description: The code engine workload type that should be created or updated [App, Function, Job]
+    description: The code engine workload type that should be created or updated. 
     required: true
 
   workload_name: 
-    description: Name of the App, Function or Job
+    description: Name of the application, job or function
     required: true
   
   function_runtime:
@@ -43,25 +44,24 @@ inputs:
     default: .
 
   workload_cpu:
-    description: CPU configuration set for the workload. If not set default Code Engine values are used. 
+    description: CPU configuration for the workload. If not set the default Code Engine value is used. 
     required: false
-    default: 1
+    default: "1"
 
   workload_memory:
-    description: Memory configuration set for the workload. If not set default Code Engine values are used.
+    description: Memory configuration for the workload. If not set the default Code Engine value is used.
     required: false
-    default: 4G
+    default: "4G"
 
   workload_port:
-    description: Port configuration set for the app workload_type. If not set default Code Engine values are used.
+    description: Port configuration for the app workload_type. If not set the default Code Engine value is used.
     required: false
-    default: 8080
+    default: "8080"
 
   workload_arg: 
     description: Additional arguments to add to the app or job
     required: false
   
-
 # Github action code 
 runs:
   using: composite
@@ -72,7 +72,7 @@ runs:
       shell: bash
       run: curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
     
-    - name: Login to IBM Cloud And target Resouce Groupe and Region
+    - name: Login to IBM Cloud and target target region and resource group for code engine deployment
       shell: bash
       run: ibmcloud login --apikey ${{ inputs.ibmcloud_api_key }} -r ${{ inputs.code_engine_region }} -g ${{ inputs.resource_group }}
 
@@ -80,8 +80,7 @@ runs:
       shell: bash
       run: ibmcloud plugin install code-engine
 
-    # Select the project using Name or ID
-    # If the project doesn`t exist , it will be created project with the provided `code_engine_project` name
+    # Select or create Code Engine Project
     - name: Select Code Engine Project
       shell: bash
       run: | 
@@ -91,9 +90,9 @@ runs:
           ibmcloud ce project create --name ${{ inputs.code_engine_project }}
         fi
 
-    # set resources for target
-    - name: Set resources
-      id: set-resources
+    # Set cpu, memory, and custom arg defaults for workloads
+    - name: Set workload resources
+      id: set_workload_resources
       shell: bash
       run: |
         # set the CPU value
@@ -110,43 +109,50 @@ runs:
           echo "workload_memory=" >> "$GITHUB_OUTPUT"
         fi
 
-    # Functions Steps
-    - name: Create or Update Functions
+        # set the arg value
+        if [[ "${{ inputs.workload_arg }}" != "" ]] ; then
+          echo "workload_arg=--arg ${{ inputs.workload_arg }}" >> "$GITHUB_OUTPUT"
+        else
+          echo "workload_arg=" >> "$GITHUB_OUTPUT"
+        fi
+
+    # Functions deployment or update steps
+    - name: Create or update code engine serverless function
       shell: bash
       id: ce-fn
       if: ( inputs.workload_type == 'function' || inputs.workload_type == 'func' || inputs.workload_type == 'fn' ) 
       run: |
 
         if ibmcloud ce fn get --name ${{ inputs.workload_name }} ; then
-          ibmcloud ce fn update --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }}
+          ibmcloud ce fn update --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }}
         else
-          ibmcloud ce fn create --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }}
+          ibmcloud ce fn create --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }}
         fi
 
-    # Application Steps
-    - name: Create or Update Application
+    # Application deployment or update steps
+    - name: Create or update code engine application
       shell: bash
       id: ce-app
       if: ( inputs.workload_type == 'application' || inputs.workload_type == 'app' ) 
       run: |
 
         if ibmcloud ce application get --name ${{ inputs.workload_name }} ; then
-          ibmcloud ce application update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }} --port ${{ inputs.workload_port }}
+          ibmcloud ce application update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} --port ${{ inputs.workload_port }} ${{ steps.set_workload_resources.outputs.workload_arg }}
         else
-          ibmcloud ce application create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }}
+          ibmcloud ce application create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }}
         fi
 
-    # Job Steps
-    - name: Create or Update Job
+    # Job deployment or update steps
+    - name: Create or update code engine job
       shell: bash
       id: ce-job
       if: inputs.workload_type == 'job' 
       run: |
 
         if ibmcloud ce job get --name ${{ inputs.workload_name }} ; then
-          ibmcloud ce job update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }}
+          ibmcloud ce job update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }}
         else
-          ibmcloud ce job create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }}
+          ibmcloud ce job create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }}
         fi
     
     - name: Get workload_type 
