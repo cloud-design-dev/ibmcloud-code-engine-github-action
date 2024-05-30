@@ -14,18 +14,18 @@ This GitHub Action enables you to create or update IBM Cloud [Code Engine](https
 
 | Name            | Required | Default Value |Description |
 |-----------------|----------|---------------|----------------------------------------------------------------|
-| `ibmcloud_api_key` |  ✅  | -  | IBM Cloud API Key. Please store your IBM Cloud API key securely in your GitHub repository Secrets.|
-| `resource_group` |  ✅  | -    | An IBM Cloud Resource Group, a logical container for organizing and managing related cloud resources.|
-| `code_engine_region`  |  ✅  | - | The geographical area where your Code Engine project is located.|
-| `code_engine_project` |  ✅   | - | A Code Engine Project, grouping your Apps, Functions, and Jobs.|
-| `workload_type`        |  ✅   | - | The type of workload to create or update (App, Function, Job). |
-| `workload_name`          |  ✅  | - | The name of the App, Function, or Job.|
-| `function_runtime`       | ❌ | - | The runtime used for the Function. Currently supported `nodejs-18` and `python-3.11` see [IBM Code Engine Function Runtimes](https://cloud.ibm.com/docs/codeengine?topic=codeengine-fun-runtime) for more information.|
-| `build_source`  | ❌ | . | Path to the directory containing the source code.|
-| `workload_cpu`           | ❌ | 1 | CPU configuration for your workload. If not specified the Code Engine default is used. |
-| `workload_memory`        | ❌ | 4G | Memory configuration for your workload. If not specified the Code Engine default is used. |
-| `workload_port`          | ❌ | 8080 | Port configuration for your app workloads |
-| `workload_arg`          | ❌ | - | Custom arguments to pass to the workload |
+| `ibmcloud_api_key`    | ✅ | - | IBM Cloud API Key. Please store your IBM Cloud API key securely in your GitHub repository Secrets.|
+| `resource_group`      | ✅ | `Default` | The IBM Cloud Resource Group to use for the Code Engine project and resources.|
+| `code_engine_region`  | ✅ | - | The IBM Cloud region where the Code Engine project and resources will be deployed.|
+| `code_engine_project` | ✅ | - | A Code Engine Project, grouping your Apps, Functions, and Jobs.|
+| `workload_type`       | ✅ | - | The type of workload to create or update (App, Function, Job). |
+| `workload_name`       | ✅ | - | The name of the workload to create or update.|
+| `function_runtime`    | ❌ | - | The runtime used for the Function. Currently supported `nodejs-18` and `python-3.11` see [IBM Code Engine Function Runtimes](https://cloud.ibm.com/docs/codeengine?topic=codeengine-fun-runtime) for more information.|
+| `build_source`        | ❌ | `.` | Path to the directory containing the source code. |
+| `workload_cpu`        | ❌ | `1` | CPU configuration for your workload. If not specified the Code Engine default `1` is used. |
+| `workload_memory`     | ❌ | `2G` | Memory configuration for your workload. If not specified the Code Engine default `4G` is used. |
+| `workload_port`       | ❌ | `8080` | Port configuration for your app workloads |
+| `workload_arg`        | ❌ | - | Custom arguments to pass to the workload |
 
 ## Usage
 
@@ -56,7 +56,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Deploy Application to Code Engine
-      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v3
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v5
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
         resource_group: ${{ env.RESOURCE_GROUP }}
@@ -92,7 +92,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Deploy Job to Code Engine
-      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v3
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v5
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
         resource_group: ${{ env.RESOURCE_GROUP }}
@@ -129,7 +129,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Deploy nodejs based function to Code Engine
-      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v3
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v5
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
         resource_group: ${{ env.RESOURCE_GROUP }}
@@ -147,7 +147,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Deploy python based function to Code Engine
-      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v3
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v5
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
         resource_group: ${{ env.RESOURCE_GROUP }}

@@ -14,12 +14,12 @@ inputs:
   resource_group:
     description: The IBM Cloud Resource Group associated with the Code Engine project.
     required: false
-    default: "Default"
+    default: 'Default'
 
   code_engine_region:
     description: The Region where the Code Engine project is located.
     required: true
-    default: "us-south"
+    default: 'us-south'
 
   code_engine_project:
     description: The name of the Code Engine Project where the workload will be deployed. 
@@ -46,17 +46,17 @@ inputs:
   workload_cpu:
     description: CPU configuration for the workload. If not set the default Code Engine value is used. 
     required: false
-    default: "1"
+    default: '1'
 
   workload_memory:
     description: Memory configuration for the workload. If not set the default Code Engine value is used.
     required: false
-    default: "4G"
+    default: '2G'
 
   workload_port:
     description: Port configuration for the app workload_type. If not set the default Code Engine value is used.
     required: false
-    default: "8080"
+    default: '8080'
 
   workload_arg: 
     description: Additional arguments to add to the app or job
