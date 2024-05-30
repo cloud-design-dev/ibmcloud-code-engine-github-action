@@ -53,7 +53,7 @@ inputs:
   workload_port:
     description: Port configuration set for the app workload_type. If not set default Code Engine values are used.
     required: false
-    default: "8080"
+    default: 8080
 
 # Github action code 
 runs:
@@ -106,7 +106,7 @@ runs:
     # Functions Steps
     - name: Create or Update Functions
       shell: bash
-      id: fn-create
+      id: ce-fn
       if: ( inputs.workload_type == 'function' || inputs.workload_type == 'func' || inputs.workload_type == 'fn' ) 
       run: |
 
@@ -119,12 +119,12 @@ runs:
     # Application Steps
     - name: Create or Update Application
       shell: bash
-      id: create-app
+      id: ce-app
       if: ( inputs.workload_type == 'application' || inputs.workload_type == 'app' ) 
       run: |
 
         if ibmcloud ce application get --name ${{ inputs.workload_name }} ; then
-          ibmcloud ce application update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }}
+          ibmcloud ce application update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }} --port ${{ inputs.workload_port }}
         else
           ibmcloud ce application create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }}
         fi
@@ -132,7 +132,7 @@ runs:
     # Job Steps
     - name: Create or Update Job
       shell: bash
-      id: create-job
+      id: ce-job
       if: inputs.workload_type == 'job' 
       run: |
 
@@ -142,9 +142,9 @@ runs:
           ibmcloud ce job create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }}
         fi
     
-    - name: Get entity 
+    - name: Get workload_type 
       shell: bash
-      if: steps.fn-create.outcome == 'success' || steps.app-create.outcome == 'success' || steps.job-create.outcome == 'success'
+      if: steps.ce-fn.outcome == 'success' || steps.ce-app.outcome == 'success' || steps.ce-job.outcome == 'success'
       run: |
         case ${{ inputs.workload_type }} in
             function|func|fn)
@@ -157,7 +157,7 @@ runs:
                 ibmcloud ce job get --name ${{ inputs.workload_name }}
                 ;;
             *)
-                echo "Wrong Code Engine Entity used!"
+                echo "Wrong Code Engine workload type used!"
                 echo "Use[ function | func | fn | application | app | job ]"
                 exit 1
                 ;;
