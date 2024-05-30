@@ -1,9 +1,9 @@
-name: Code Engine Create or Update
-description: Github action to create or update Apps, Jobs and Functions in IBM Cloud Code Engine
+name: Deploy or update Code Engine workloads
+description: Github action to create or update applications, batch jobs and serverless functions in IBM Cloud Code Engine
 author: Ryan Tiffany
 
 branding:
-  icon: cloud
+  icon: upload-cloud
   color: blue
 
 inputs:
@@ -45,15 +45,22 @@ inputs:
   workload_cpu:
     description: CPU configuration set for the workload. If not set default Code Engine values are used. 
     required: false
+    default: 1
 
   workload_memory:
     description: Memory configuration set for the workload. If not set default Code Engine values are used.
     required: false
+    default: 4G
 
   workload_port:
     description: Port configuration set for the app workload_type. If not set default Code Engine values are used.
     required: false
     default: 8080
+
+  workload_arg: 
+    description: Additional arguments to add to the app or job
+    required: false
+  
 
 # Github action code 
 runs:
