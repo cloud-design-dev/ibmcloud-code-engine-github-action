@@ -91,62 +91,62 @@ runs:
       run: |
         # set the CPU value
         if [[ "${{ inputs.workload_cpu }}" != "" ]] ; then
-          echo "cpu=--cpu ${{ inputs.workload_cpu }}" >> "$GITHUB_OUTPUT"
+          echo "workload_cpu=--cpu ${{ inputs.workload_cpu }}" >> "$GITHUB_OUTPUT"
         else
-          echo "cpu=" >> "$GITHUB_OUTPUT"
+          echo "workload_cpu=" >> "$GITHUB_OUTPUT"
         fi
         
         # set the memory value
         if [[ "${{ inputs.workload_memory }}" != "" ]] ; then
-          echo "memory=--memory ${{ inputs.workload_memory }}" >> "$GITHUB_OUTPUT"
+          echo "workload_memory=--memory ${{ inputs.workload_memory }}" >> "$GITHUB_OUTPUT"
         else
-          echo "memory=" >> "$GITHUB_OUTPUT"
+          echo "workload_memory=" >> "$GITHUB_OUTPUT"
         fi
 
     # Functions Steps
     - name: Create or Update Functions
       shell: bash
       id: fn-create
-      if: ( inputs.entity == 'function' || inputs.entity == 'func' || inputs.entity == 'fn' ) 
+      if: ( inputs.workload_type == 'function' || inputs.workload_type == 'func' || inputs.workload_type == 'fn' ) 
       run: |
 
         if ibmcloud ce fn get --name ${{ inputs.workload_name }} ; then
-          ibmcloud ce fn update --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.cpu }} ${{ steps.set-resources.outputs.memory }}
+          ibmcloud ce fn update --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }}
         else
-          ibmcloud ce fn create --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.cpu }} ${{ steps.set-resources.outputs.memory }}
+          ibmcloud ce fn create --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }}
         fi
 
     # Application Steps
     - name: Create or Update Application
       shell: bash
       id: create-app
-      if: ( inputs.entity == 'application' || inputs.entity == 'app' ) 
+      if: ( inputs.workload_type == 'application' || inputs.workload_type == 'app' ) 
       run: |
 
         if ibmcloud ce application get --name ${{ inputs.workload_name }} ; then
-          ibmcloud ce application update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.cpu }} ${{ steps.set-resources.outputs.memory }}
+          ibmcloud ce application update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }}
         else
-          ibmcloud ce application create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.cpu }} ${{ steps.set-resources.outputs.memory }}
+          ibmcloud ce application create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }}
         fi
 
     # Job Steps
     - name: Create or Update Job
       shell: bash
       id: create-job
-      if: inputs.entity == 'job' 
+      if: inputs.workload_type == 'job' 
       run: |
 
         if ibmcloud ce job get --name ${{ inputs.workload_name }} ; then
-          ibmcloud ce job update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set-resources.outputs.cpu }} ${{ steps.set-resources.outputs.memory }}
+          ibmcloud ce job update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }}
         else
-          ibmcloud ce job create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set-resources.outputs.cpu }} ${{ steps.set-resources.outputs.memory }}
+          ibmcloud ce job create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set-resources.outputs.workload_cpu }} ${{ steps.set-resources.outputs.workload_memory }}
         fi
     
     - name: Get entity 
       shell: bash
       if: steps.fn-create.outcome == 'success' || steps.app-create.outcome == 'success' || steps.job-create.outcome == 'success'
       run: |
-        case ${{ inputs.entity }} in
+        case ${{ inputs.workload_type }} in
             function|func|fn)
                 ibmcloud ce fn get --name ${{ inputs.workload_name }}
                 ;;
