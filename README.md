@@ -44,6 +44,7 @@ env:
   CODE_ENGINE_REGION: "us-south"
   CODE_ENGINE_PROJECT: "Code Engine Project Name"
   WORKLOAD_NAME: "my-cool-app"
+  RESOURCE_GROUP: "my-resource-group"
 
 jobs:
 
@@ -54,18 +55,18 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Deploy Application to Code Engine
-      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v1
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v2
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
-        resource_group: 'Default'
+        resource_group: ${{ env.RESOURCE_GROUP }}
         code_engine_region: ${{ env.CODE_ENGINE_REGION }}
         code_engine_project: ${{ env.CODE_ENGINE_PROJECT }}
         workload_type: 'app'
         workload_name: ${{ env.WORKLOAD_NAME }}
         workload_port: 8080
         build_source: './app-code'
-        cpu: 1
-        memory: 4G
+        workload_cpu: 1
+        workload_memory: 4G
 ```
 
 ### Job Workload
@@ -82,7 +83,9 @@ env:
   CODE_ENGINE_REGION: "us-south"
   CODE_ENGINE_PROJECT: "Code Engine Project Name"
   WORKLOAD_NAME: "etl-job"
+  RESOURCE_GROUP: "my-resource-group"
 
+jobs:
   code-engine-job:
     runs-on: ubuntu-latest
     steps:
@@ -90,17 +93,17 @@ env:
       uses: actions/checkout@v3
 
     - name: Deploy Job to Code Engine
-      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v1
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v2
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
-        resource_group: 'Default'
+        resource_group: ${{ env.RESOURCE_GROUP }}
         code_engine_region: ${{ env.CODE_ENGINE_REGION }}
         code_engine_project: ${{ env.CODE_ENGINE_PROJECT }}
         workload_type: 'job'
         workload_name: ${{ env.WORKLOAD_NAME }}
         build_source: './job-code'
-        cpu: 1
-        memory: 4G
+        workload_cpu: 1
+        workload_memory: 4G
 ```
 
 ### Function Workload
@@ -108,6 +111,19 @@ env:
 Code Engine currently supports nodejs (`nodejs-18`) and python (`python-3.11`) for serverless functions. This is set with the `function_runtime` input.
 
 ```yaml
+name: Create or update Code Engine serverless function
+
+on:
+  push:
+    branches:
+      - main
+env:
+  CODE_ENGINE_REGION: "us-south"
+  CODE_ENGINE_PROJECT: "Code Engine Project Name"
+  WORKLOAD_NAME: "webhook-fn"
+  RESOURCE_GROUP: "my-resource-group"
+
+jobs:
   code-engine-fn-js:
     runs-on: ubuntu-latest
     steps:
@@ -115,18 +131,16 @@ Code Engine currently supports nodejs (`nodejs-18`) and python (`python-3.11`) f
       uses: actions/checkout@v3
 
     - name: Deploy nodejs based function to Code Engine
-      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v1
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v2
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
-        resource_group: 'Default'
+        resource_group: ${{ env.RESOURCE_GROUP }}
         code_engine_region: ${{ env.CODE_ENGINE_REGION }}
         code_engine_project: ${{ env.CODE_ENGINE_PROJECT }}
         workload_type: 'fn'
         function_runtime: 'nodejs-18'
         workload_name: ${{ env.WORKLOAD_NAME }}
         build_source: './fn-js-code'
-        cpu: 1
-        memory: 4G
 
   code-engine-fn-py:
     runs-on: ubuntu-latest
@@ -135,18 +149,18 @@ Code Engine currently supports nodejs (`nodejs-18`) and python (`python-3.11`) f
       uses: actions/checkout@v3
 
     - name: Deploy python based function to Code Engine
-      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v1
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v2
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
-        resource_group: 'Default'
+        resource_group: ${{ env.RESOURCE_GROUP }}
         code_engine_region: ${{ env.CODE_ENGINE_REGION }}
         code_engine_project: ${{ env.CODE_ENGINE_PROJECT }}
         workload_type: 'fn'
         function_runtime: 'python-3.11'
         workload_name: ${{ env.WORKLOAD_NAME }}
         build_source: './fn-python-code'
-        cpu: 1
-        memory: 4G
+        workload_cpu: 1
+        workload_memory: 4G
 ```
 
 This action is not officially endorsed by IBM Cloud but can be used as a community-contributed GitHub Action.
