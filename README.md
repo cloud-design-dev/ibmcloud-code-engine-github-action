@@ -1,8 +1,6 @@
-# Code Engine Deploy GitHub Action
+# IBM Code Engine Workload GitHub Action
 
-This GitHub Action allows you to Create or update Code Engine Apps, Jobs, and Functions in IBM Cloud. 
-
-It offers flexibility for different deployment types and provides various configuration options. 
+Github Action to create or update a Code Engine workload (App, Job, Function) in IBM Cloud.
 
 ## Author
 
@@ -10,7 +8,7 @@ It offers flexibility for different deployment types and provides various config
 
 ## Description
 
-This action allows you to create or update IBM Cloud Code Engine workloads. It supports deploying applications, jobs, and functions and can be configured with the following inputs:
+This GitHub Action enables you to create or update IBM Cloud [Code Engine](https://cloud.ibm.com/docs/codeengine?topic=codeengine-about) applications, batch jobs, and serverless functions. The action allows you to target different Code Engine workload types and can be configured with the following inputs:
 
 ### Inputs
 
@@ -28,15 +26,14 @@ This action allows you to create or update IBM Cloud Code Engine workloads. It s
 | `workload_memory`        | ❌ | - | Memory configuration for your workload. If not specified the Code Engine default is used. |
 | `workload_port`          | ❌ | 8080 | Port configuration for your app workloads |
 
-
 ## Usage
 
-To use this action add it to your GitHub Actions workflow YAML file. Here are examples of how to create or update an App, Job, and Function:
+To use this action add it to your GitHub Actions workflow YAML file. Here are some examples of how to use the action with the different workload types:
 
-
+### App Workload
 
 ```yaml
-name: Create or update workload in IBM Cloud Code Engine
+name: Create or update Code Engine app
 
 on:
   push:
@@ -69,6 +66,22 @@ jobs:
         build_source: './app-code'
         cpu: 1
         memory: 4G
+```
+
+### Job Workload
+
+```yaml
+name: Create or update Code Engine job
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  CODE_ENGINE_REGION: "us-south"
+  CODE_ENGINE_PROJECT: "Code Engine Project Name"
+  WORKLOAD_NAME: "etl-job"
 
   code-engine-job:
     runs-on: ubuntu-latest
@@ -77,7 +90,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Deploy Job to Code Engine
-      uses: skywalkeretw/ibm-code-engine-github-action@v1
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v1
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
         resource_group: 'Default'
@@ -88,15 +101,21 @@ jobs:
         build_source: './job-code'
         cpu: 1
         memory: 4G
+```
 
+### Function Workload
+
+Code Engine currently supports nodejs (`nodejs-18`) and python (`python-3.11`) for serverless functions. This is set with the `function_runtime` input.
+
+```yaml
   code-engine-fn-js:
     runs-on: ubuntu-latest
     steps:
     - name: Check out code
       uses: actions/checkout@v3
 
-    - name: Deploy JavaScript Function to Code Engine
-      uses: skywalkeretw/ibm-code-engine-github-action@v1
+    - name: Deploy nodejs based function to Code Engine
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v1
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
         resource_group: 'Default'
@@ -115,8 +134,8 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v3
 
-    - name: Deploy JavaScript Function to Code Engine
-      uses: skywalkeretw/ibm-code-engine-github-action@v1
+    - name: Deploy python based function to Code Engine
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v1
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
         resource_group: 'Default'
@@ -128,7 +147,6 @@ jobs:
         build_source: './fn-python-code'
         cpu: 1
         memory: 4G
-
 ```
 
 This action is not officially endorsed by IBM Cloud but can be used as a community-contributed GitHub Action.
