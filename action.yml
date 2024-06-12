@@ -106,8 +106,7 @@ runs:
       run: | 
         if [[ -n "${{ inputs.registry_namespace }}" && "${{ inputs.registry_image }}" ]] ; then
           ibmcloud cr login
-          endpoint="private.$(ibmcloud cr region | grep -i 'icr.io' | cut -d "'" -f4)"
-          echo "workload_image=--image ${endpoint}/${{ inputs.registry_namespace }}/${{ inputs.registry_image }}" >> "$GITHUB_OUTPUT"
+          echo "workload_image=--image private.$(ibmcloud cr region | grep -i 'icr.io' | cut -d "'" -f4)/${{ inputs.registry_namespace }}/${{ inputs.registry_image }}" >> "$GITHUB_OUTPUT"
         else
           echo "workload_image=" >> "$GITHUB_OUTPUT"
         fi
@@ -166,9 +165,9 @@ runs:
       run: |
 
         if ibmcloud ce application get --name ${{ inputs.workload_name }} ; then
-          ibmcloud ce application update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} --port ${{ inputs.workload_port }} ${{ steps.set_workload_resources.outputs.workload_arg }}
+          ibmcloud ce application update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} --port ${{ inputs.workload_port }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.workload_image }} ${{ steps.login_to_cr.outputs.registry_secret }}
         else
-          ibmcloud ce application create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }}
+          ibmcloud ce application create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.workload_image }} ${{ steps.login_to_cr.outputs.registry_secret }}
         fi
 
     # Job deployment or update steps
