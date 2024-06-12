@@ -58,7 +58,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Deploy Application to Code Engine
-      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v5
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v20
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
         resource_group: ${{ env.RESOURCE_GROUP }}
@@ -96,7 +96,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Deploy Job to Code Engine
-      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v5
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v20
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
         resource_group: ${{ env.RESOURCE_GROUP }}
@@ -133,7 +133,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Deploy nodejs based function to Code Engine
-      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v5
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v20
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
         resource_group: ${{ env.RESOURCE_GROUP }}
@@ -151,7 +151,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Deploy python based function to Code Engine
-      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v5
+      uses: cloud-design-dev/ibmcloud-code-engine-github-action@v20
       with:
         ibmcloud_api_key: ${{ secrets.IBMCLOUD_API_KEY }}
         resource_group: ${{ env.RESOURCE_GROUP }}
