@@ -112,17 +112,13 @@ runs:
           echo "workload_image=" >> "$GITHUB_OUTPUT"
         fi
 
-        # check if registry secret exists, if not create one and set it
-        secret_name = ${{ inputs.workload_name }}-ce-cr-secret
-        
-        if ibmcloud ce secret get --name $secret_name > /dev/null 2>&1; then 
-          echo "registry_secret=--registry-secret $secret_name" >> "$GITHUB_OUTPUT"
+        if ibmcloud ce secret get --name "${{ inputs.workload_name }}-ce-cr-secret" > /dev/null 2>&1; then 
+          echo "registry_secret=--registry-secret ${{ inputs.workload_name }}-ce-cr-secret" >> "$GITHUB_OUTPUT"
         else
-          ibmcloud ce registry create --name $secret_name --username iamapikey --password ${{ inputs.ibmcloud_api_key }} --server $endpoint --email githubaction@example.com
-          echo "registry_secret=--registry-secret $secret_name" >> "$GITHUB_OUTPUT"
+          ibmcloud ce registry create --name ${{ inputs.workload_name }}-ce-cr-secret --username iamapikey --password ${{ inputs.ibmcloud_api_key }} --server $endpoint --email githubaction@example.com
+          echo "registry_secret=--registry-secret ${{ inputs.workload_name }}-ce-cr-secret" >> "$GITHUB_OUTPUT"
         fi
 
- 
     # Set cpu, memory, and custom arg defaults for workloads
     - name: Set workload resources
       id: set_workload_resources
