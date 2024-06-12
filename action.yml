@@ -3,7 +3,7 @@ description: Github action to create or update IBM Cloud Code Engine application
 author: Ryan Tiffany
 
 branding:
-  icon: upload-cloud
+  icon: refresh-ccw
   color: blue
 
 inputs:
@@ -154,17 +154,17 @@ runs:
         fi
 
     # # Functions deployment or update steps
-    # - name: Create or update code engine serverless function
-    #   shell: bash
-    #   id: ce-fn
-    #   if: ( inputs.workload_type == 'function' || inputs.workload_type == 'func' || inputs.workload_type == 'fn' ) 
-    #   run: |
+    - name: Create or update code engine serverless function
+      shell: bash
+      id: ce-fn
+      if: ( inputs.workload_type == 'function' || inputs.workload_type == 'func' || inputs.workload_type == 'fn' ) 
+      run: |
 
-    #     if ibmcloud ce fn get --name ${{ inputs.workload_name }} ; then
-    #       ibmcloud ce fn update --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }}
-    #     else
-    #       ibmcloud ce fn create --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }}
-    #     fi
+        if ibmcloud ce fn get --name ${{ inputs.workload_name }} ; then
+          ibmcloud ce fn update --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }}
+        else
+          ibmcloud ce fn create --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }}
+        fi
 
     # # Application deployment or update steps
     - name: Create or update code engine application
@@ -179,36 +179,36 @@ runs:
           ibmcloud ce application create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.registry_image }} ${{ steps.cr_secret.outputs.registry_secret }}
         fi
 
-    # # Job deployment or update steps
-    # - name: Create or update code engine job
-    #   shell: bash
-    #   id: ce-job
-    #   if: inputs.workload_type == 'job' 
-    #   run: |
+    # Job deployment or update steps
+    - name: Create or update code engine job
+      shell: bash
+      id: ce-job
+      if: inputs.workload_type == 'job' 
+      run: |
 
-    #     if ibmcloud ce job get --name ${{ inputs.workload_name }} ; then
-    #       ibmcloud ce job update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.workload_image }} ${{ steps.login_to_cr.outputs.registry_secret }}
-    #     else
-    #       ibmcloud ce job create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.workload_image }} ${{ steps.login_to_cr.outputs.registry_secret }}
-    #     fi
+        if ibmcloud ce job get --name ${{ inputs.workload_name }} ; then
+          ibmcloud ce job update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.registry_image }} ${{ steps.cr_secret.outputs.registry_secret }}
+        else
+          ibmcloud ce job create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.registry_image }} ${{ steps.cr_secret.outputs.registry_secret }}
+        fi
     
-    # - name: Get workload_type 
-    #   shell: bash
-    #   if: steps.ce-fn.outcome == 'success' || steps.ce-app.outcome == 'success' || steps.ce-job.outcome == 'success'
-    #   run: |
-    #     case ${{ inputs.workload_type }} in
-    #         function|func|fn)
-    #             ibmcloud ce fn get --name ${{ inputs.workload_name }}
-    #             ;;
-    #         application|app)
-    #             ibmcloud ce app get --name ${{ inputs.workload_name }}
-    #             ;;
-    #         job)
-    #             ibmcloud ce job get --name ${{ inputs.workload_name }}
-    #             ;;
-    #         *)
-    #             echo "Wrong Code Engine workload type used!"
-    #             echo "Use[ function | func | fn | application | app | job ]"
-    #             exit 1
-    #             ;;
-    #     esac
+    - name: Get workload_type 
+      shell: bash
+      if: steps.ce-fn.outcome == 'success' || steps.ce-app.outcome == 'success' || steps.ce-job.outcome == 'success'
+      run: |
+        case ${{ inputs.workload_type }} in
+            function|func|fn)
+                ibmcloud ce fn get --name ${{ inputs.workload_name }}
+                ;;
+            application|app)
+                ibmcloud ce app get --name ${{ inputs.workload_name }}
+                ;;
+            job)
+                ibmcloud ce job get --name ${{ inputs.workload_name }}
+                ;;
+            *)
+                echo "Wrong Code Engine workload type used!"
+                echo "Use[ function | func | fn | application | app | job ]"
+                exit 1
+                ;;
+        esac
