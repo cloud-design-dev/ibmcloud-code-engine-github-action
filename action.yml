@@ -122,7 +122,7 @@ runs:
         if ibmcloud ce secret get --name "${{ inputs.workload_name }}-ce-cr-secret" > /dev/null 2>&1; then 
           echo "registry_secret=--registry-secret ${{ inputs.workload_name }}-ce-cr-secret" >> "$GITHUB_OUTPUT"
         else
-          ibmcloud ce registry create --name ${{ inputs.workload_name }}-ce-cr-secret --username iamapikey --password ${{ inputs.ibmcloud_api_key }} --server ${{ env.ICR_ENDPOINT }} --email githubaction@example.com
+          ibmcloud ce registry create --name ${{ inputs.workload_name }}-ce-cr-secret --username iamapikey --password ${{ inputs.ibmcloud_api_key }} --server private.$(ibmcloud cr region | grep -i 'icr.io' | cut -d "'" -f4) --email githubaction@example.com
 
           echo "registry_secret=--registry-secret ${{ inputs.workload_name }}-ce-cr-secret" >> "$GITHUB_OUTPUT"
         fi
