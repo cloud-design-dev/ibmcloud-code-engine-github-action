@@ -106,11 +106,14 @@ runs:
       run: | 
         if [[ -n "${{ inputs.registry_namespace }}" && "${{ inputs.registry_image }}" ]] ; then
           ibmcloud cr login
-          echo "endpoint=private.${{inputs.code_engine_region%%-*}}" >> "$GITHUB_OUTPUT"
-          # echo "workload_image=--image private.${{inputs.code_engine_region%%-*}}/${{ inputs.registry_namespace }}/${{ inputs.registry_image }}" >> "$GITHUB_OUTPUT"
+          echo "endpoint=$(ibmcloud cr region | grep -i 'icr.io' | cut -d "'" -f4)" >> "$GITHUB_ENV"
         else
-          echo "endpoint=" >> "$GITHUB_OUTPUT"
+          echo "endpoint=" >> "$GITHUB_ENV"
         fi
+
+    - name: Set short SHA
+      shell: bash
+      run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-8)" >> $GITHUB_ENV
 
         # if ibmcloud ce secret get --name "${{ inputs.workload_name }}-ce-cr-secret" > /dev/null 2>&1; then 
         #   echo "registry_secret=--registry-secret ${{ inputs.workload_name }}-ce-cr-secret" >> "$GITHUB_OUTPUT"
