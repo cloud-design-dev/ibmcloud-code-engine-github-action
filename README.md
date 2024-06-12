@@ -26,6 +26,8 @@ This GitHub Action enables you to create or update IBM Cloud [Code Engine](https
 | `workload_memory`     | ❌ | `2G` | Memory configuration for your workload. If not specified the Code Engine default `4G` is used. |
 | `workload_port`       | ❌ | `8080` | Port configuration for your app workloads |
 | `workload_arg`        | ❌ | - | Custom arguments to pass to the workload |
+| `registry_namespace`        | ❌ | - | Name of the ICR namespace to use for workload container images |
+| `registry_image`        | ❌ | - | Name of the Container image to use for workload |
 
 ## Usage
 
@@ -66,6 +68,8 @@ jobs:
         workload_name: ${{ env.WORKLOAD_NAME }}
         workload_port: 8080
         build_source: './app-code'
+        registry_namespace: "my-icr-namespace"
+        registry_image: "${{ env.WORKLOAD_NAME }}-image"
 ```
 
 ### Job Workload
