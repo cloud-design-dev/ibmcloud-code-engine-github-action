@@ -100,106 +100,112 @@ runs:
           ibmcloud ce project create --name ${{ inputs.code_engine_project }}
         fi
  
-    - name: Login to IBM Cloud Container Registry if using private registry namespace
+    - name: Login to IBM Cloud Container Registry and set private endpoint
       shell: bash
       id: login_to_cr
       run: | 
         if [[ -n "${{ inputs.registry_namespace }}" && "${{ inputs.registry_image }}" ]] ; then
           ibmcloud cr login
-          echo "workload_image=--image private.$(ibmcloud cr region | grep -i 'icr.io' | cut -d "'" -f4)/${{ inputs.registry_namespace }}/${{ inputs.registry_image }}" >> "$GITHUB_OUTPUT"
+          echo "endpoint=private.${{inputs.code_engine_region%%-*}}" >> "$GITHUB_OUTPUT"
+          # echo "workload_image=--image private.${{inputs.code_engine_region%%-*}}/${{ inputs.registry_namespace }}/${{ inputs.registry_image }}" >> "$GITHUB_OUTPUT"
         else
-          echo "workload_image=" >> "$GITHUB_OUTPUT"
+          echo "endpoint=" >> "$GITHUB_OUTPUT"
         fi
 
-        if ibmcloud ce secret get --name "${{ inputs.workload_name }}-ce-cr-secret" > /dev/null 2>&1; then 
-          echo "registry_secret=--registry-secret ${{ inputs.workload_name }}-ce-cr-secret" >> "$GITHUB_OUTPUT"
-        else
-          ibmcloud ce registry create --name ${{ inputs.workload_name }}-ce-cr-secret --username iamapikey --password ${{ inputs.ibmcloud_api_key }} --server $endpoint --email githubaction@example.com
-          echo "registry_secret=--registry-secret ${{ inputs.workload_name }}-ce-cr-secret" >> "$GITHUB_OUTPUT"
-        fi
+        # if ibmcloud ce secret get --name "${{ inputs.workload_name }}-ce-cr-secret" > /dev/null 2>&1; then 
+        #   echo "registry_secret=--registry-secret ${{ inputs.workload_name }}-ce-cr-secret" >> "$GITHUB_OUTPUT"
+        # else
+        #   ibmcloud ce registry create --name ${{ inputs.workload_name }}-ce-cr-secret --username iamapikey --password ${{ inputs.ibmcloud_api_key }} --server $endpoint --email githubaction@example.com
+        #   echo "registry_secret=--registry-secret ${{ inputs.workload_name }}-ce-cr-secret" >> "$GITHUB_OUTPUT"
+        # fi
 
-    # Set cpu, memory, and custom arg defaults for workloads
-    - name: Set workload resources
-      id: set_workload_resources
+    - name: show outputs
       shell: bash
       run: |
-        # set the CPU value
-        if [[ "${{ inputs.workload_cpu }}" != "" ]] ; then
-          echo "workload_cpu=--cpu ${{ inputs.workload_cpu }}" >> "$GITHUB_OUTPUT"
-        else
-          echo "workload_cpu=" >> "$GITHUB_OUTPUT"
-        fi
+        echo ${{ steps.login_to_cr.outputs.endpoint }}
+
+    # # Set cpu, memory, and custom arg defaults for workloads
+    # - name: Set workload resources
+    #   id: set_workload_resources
+    #   shell: bash
+    #   run: |
+    #     # set the CPU value
+    #     if [[ "${{ inputs.workload_cpu }}" != "" ]] ; then
+    #       echo "workload_cpu=--cpu ${{ inputs.workload_cpu }}" >> "$GITHUB_OUTPUT"
+    #     else
+    #       echo "workload_cpu=" >> "$GITHUB_OUTPUT"
+    #     fi
         
-        # set the memory value
-        if [[ "${{ inputs.workload_memory }}" != "" ]] ; then
-          echo "workload_memory=--memory ${{ inputs.workload_memory }}" >> "$GITHUB_OUTPUT"
-        else
-          echo "workload_memory=" >> "$GITHUB_OUTPUT"
-        fi
+    #     # set the memory value
+    #     if [[ "${{ inputs.workload_memory }}" != "" ]] ; then
+    #       echo "workload_memory=--memory ${{ inputs.workload_memory }}" >> "$GITHUB_OUTPUT"
+    #     else
+    #       echo "workload_memory=" >> "$GITHUB_OUTPUT"
+    #     fi
 
-        # set the arg value
-        if [[ "${{ inputs.workload_arg }}" != "" ]] ; then
-          echo "workload_arg=--arg ${{ inputs.workload_arg }}" >> "$GITHUB_OUTPUT"
-        else
-          echo "workload_arg=" >> "$GITHUB_OUTPUT"
-        fi
+    #     # set the arg value
+    #     if [[ "${{ inputs.workload_arg }}" != "" ]] ; then
+    #       echo "workload_arg=--arg ${{ inputs.workload_arg }}" >> "$GITHUB_OUTPUT"
+    #     else
+    #       echo "workload_arg=" >> "$GITHUB_OUTPUT"
+    #     fi
 
-    # Functions deployment or update steps
-    - name: Create or update code engine serverless function
-      shell: bash
-      id: ce-fn
-      if: ( inputs.workload_type == 'function' || inputs.workload_type == 'func' || inputs.workload_type == 'fn' ) 
-      run: |
+    # # Functions deployment or update steps
+    # - name: Create or update code engine serverless function
+    #   shell: bash
+    #   id: ce-fn
+    #   if: ( inputs.workload_type == 'function' || inputs.workload_type == 'func' || inputs.workload_type == 'fn' ) 
+    #   run: |
 
-        if ibmcloud ce fn get --name ${{ inputs.workload_name }} ; then
-          ibmcloud ce fn update --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }}
-        else
-          ibmcloud ce fn create --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }}
-        fi
+    #     if ibmcloud ce fn get --name ${{ inputs.workload_name }} ; then
+    #       ibmcloud ce fn update --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }}
+    #     else
+    #       ibmcloud ce fn create --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }}
+    #     fi
 
-    # Application deployment or update steps
-    - name: Create or update code engine application
-      shell: bash
-      id: ce-app
-      if: ( inputs.workload_type == 'application' || inputs.workload_type == 'app' ) 
-      run: |
+    # # Application deployment or update steps
+    # - name: Create or update code engine application
+    #   shell: bash
+    #   id: ce-app
+    #   if: ( inputs.workload_type == 'application' || inputs.workload_type == 'app' ) 
+    #   run: |
 
-        if ibmcloud ce application get --name ${{ inputs.workload_name }} ; then
-          ibmcloud ce application update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} --port ${{ inputs.workload_port }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.workload_image }} ${{ steps.login_to_cr.outputs.registry_secret }}
-        else
-          ibmcloud ce application create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.workload_image }} ${{ steps.login_to_cr.outputs.registry_secret }}
-        fi
+    #     if ibmcloud ce application get --name ${{ inputs.workload_name }} ; then
+    #       ibmcloud ce application update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} --port ${{ inputs.workload_port }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.workload_image }} ${{ steps.login_to_cr.outputs.registry_secret }}
+    #     else
+    #       ibmcloud ce application create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.workload_image }} ${{ steps.login_to_cr.outputs.registry_secret }}
+    #     fi
 
-    # Job deployment or update steps
-    - name: Create or update code engine job
-      shell: bash
-      id: ce-job
-      if: inputs.workload_type == 'job' 
-      run: |
+    # # Job deployment or update steps
+    # - name: Create or update code engine job
+    #   shell: bash
+    #   id: ce-job
+    #   if: inputs.workload_type == 'job' 
+    #   run: |
 
-        if ibmcloud ce job get --name ${{ inputs.workload_name }} ; then
-          ibmcloud ce job update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.workload_image }} ${{ steps.login_to_cr.outputs.registry_secret }}
-        else
-          ibmcloud ce job create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.workload_image }} ${{ steps.login_to_cr.outputs.registry_secret }}
-        fi
+    #     if ibmcloud ce job get --name ${{ inputs.workload_name }} ; then
+    #       ibmcloud ce job update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.workload_image }} ${{ steps.login_to_cr.outputs.registry_secret }}
+    #     else
+    #       ibmcloud ce job create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.workload_image }} ${{ steps.login_to_cr.outputs.registry_secret }}
+    #     fi
     
-    - name: Get workload_type 
-      shell: bash
-      if: steps.ce-fn.outcome == 'success' || steps.ce-app.outcome == 'success' || steps.ce-job.outcome == 'success'
-      run: |
-        case ${{ inputs.workload_type }} in
-            function|func|fn)
-                ibmcloud ce fn get --name ${{ inputs.workload_name }}
-                ;;
-            application|app)
-                ibmcloud ce app get --name ${{ inputs.workload_name }}
-                ;;
-            job)
-                ibmcloud ce job get --name ${{ inputs.workload_name }}
-                ;;
-            *)
-                echo "Wrong Code Engine workload type used!"
-                echo "Use[ function | func | fn | application | app | job ]"
-                exit 1
-                ;;
-        esac
+    # - name: Get workload_type 
+    #   shell: bash
+    #   if: steps.ce-fn.outcome == 'success' || steps.ce-app.outcome == 'success' || steps.ce-job.outcome == 'success'
+    #   run: |
+    #     case ${{ inputs.workload_type }} in
+    #         function|func|fn)
+    #             ibmcloud ce fn get --name ${{ inputs.workload_name }}
+    #             ;;
+    #         application|app)
+    #             ibmcloud ce app get --name ${{ inputs.workload_name }}
+    #             ;;
+    #         job)
+    #             ibmcloud ce job get --name ${{ inputs.workload_name }}
+    #             ;;
+    #         *)
+    #             echo "Wrong Code Engine workload type used!"
+    #             echo "Use[ function | func | fn | application | app | job ]"
+    #             exit 1
+    #             ;;
+    #     esac
