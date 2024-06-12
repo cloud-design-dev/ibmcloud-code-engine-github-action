@@ -62,6 +62,15 @@ inputs:
     description: Additional arguments to add to the app or job
     required: false
   
+  registry_namespace:
+    description: The namespace of the private container registry where the image is stored. 
+    required: false
+
+  registry_image:
+    description: The image name in the private container registry. 
+    required: false
+
+
 # Github action code 
 runs:
   using: composite
@@ -78,10 +87,11 @@ runs:
 
     - name: Install Code Engine Plugin
       shell: bash
-      run: ibmcloud plugin install code-engine
+      run: ibmcloud plugin install code-engine container-registry
 
     # Select or create Code Engine Project
     - name: Select Code Engine Project
+      id: select_code_engine_project
       shell: bash
       run: | 
         if ibmcloud ce project select --name ${{ inputs.code_engine_project }} || ibmcloud ce project select --id ${{ inputs.code_engine_project }} ; then
@@ -89,7 +99,30 @@ runs:
         else
           ibmcloud ce project create --name ${{ inputs.code_engine_project }}
         fi
+ 
+    - name: Login to IBM Cloud Container Registry if using private registry namespace
+      shell: bash
+      id: login_to_cr
+      run: | 
+        if [[ -n "${{ inputs.registry_namespace }}" && "${{ inputs.registry_image }}" ]] ; then
+          ibmcloud cr login
+          endpoint="private.$(ibmcloud cr region | grep -i 'icr.io' | cut -d "'" -f4)"
+          echo "workload_image=--image ${endpoint}/${{ inputs.registry_namespace }}/${{ inputs.registry_image }}" >> "$GITHUB_OUTPUT"
+        else
+          echo "workload_image=" >> "$GITHUB_OUTPUT"
+        fi
 
+        # check if registry secret exists, if not create one and set it
+        secret_name = ${{ inputs.workload_name }}-ce-cr-secret
+        
+        if ibmcloud ce secret get --name $secret_name > /dev/null 2>&1; then 
+          echo "registry_secret=--registry-secret $secret_name" >> "$GITHUB_OUTPUT"
+        else
+          ibmcloud ce registry create --name $secret_name --username iamapikey --password ${{ inputs.ibmcloud_api_key }} --server $endpoint --email githubaction@example.com
+          echo "registry_secret=--registry-secret $secret_name" >> "$GITHUB_OUTPUT"
+        fi
+
+ 
     # Set cpu, memory, and custom arg defaults for workloads
     - name: Set workload resources
       id: set_workload_resources
@@ -150,9 +183,9 @@ runs:
       run: |
 
         if ibmcloud ce job get --name ${{ inputs.workload_name }} ; then
-          ibmcloud ce job update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }}
+          ibmcloud ce job update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.workload_image }} ${{ steps.login_to_cr.outputs.registry_secret }}
         else
-          ibmcloud ce job create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }}
+          ibmcloud ce job create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.workload_image }} ${{ steps.login_to_cr.outputs.registry_secret }}
         fi
     
     - name: Get workload_type 
