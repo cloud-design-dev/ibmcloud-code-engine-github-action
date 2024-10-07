@@ -3,7 +3,7 @@ description: Github action to create or update IBM Cloud Code Engine application
 author: Ryan Tiffany
 
 branding:
-  icon: upload-cloud
+  icon: refresh-ccw
   color: blue
 
 inputs:
@@ -62,6 +62,15 @@ inputs:
     description: Additional arguments to add to the app or job
     required: false
   
+  registry_namespace:
+    description: The namespace of the private container registry where the image is stored. 
+    required: false
+
+  registry_image:
+    description: The image name in the private container registry. 
+    required: false
+
+
 # Github action code 
 runs:
   using: composite
@@ -78,16 +87,51 @@ runs:
 
     - name: Install Code Engine Plugin
       shell: bash
-      run: ibmcloud plugin install code-engine
+      run: ibmcloud plugin install code-engine container-registry
+
+    - name: Set short SHA to use as image tag
+      shell: bash
+      run: echo "SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-8)" >> $GITHUB_ENV
 
     # Select or create Code Engine Project
     - name: Select Code Engine Project
+      id: select_code_engine_project
       shell: bash
       run: | 
         if ibmcloud ce project select --name ${{ inputs.code_engine_project }} || ibmcloud ce project select --id ${{ inputs.code_engine_project }} ; then
           echo "Project Selected"
         else
           ibmcloud ce project create --name ${{ inputs.code_engine_project }}
+        fi
+ 
+    - name: Login to IBM Cloud Container Registry and set private endpoint
+      shell: bash
+      id: login_to_cr
+      run: | 
+        if [[ -n "${{ inputs.registry_namespace }}" && "${{ inputs.registry_image }}" ]] ; then
+          ibmcloud cr login
+          echo "registry_image=--image private.$(ibmcloud cr region | grep -i 'icr.io' | cut -d "'" -f4)/${{ inputs.registry_namespace }}/${{ inputs.registry_image }}:${{ env.SHORT_SHA }}" >> "$GITHUB_OUTPUT"
+        else
+          echo "registry_image=" >> "$GITHUB_OUTPUT"
+        fi
+    
+    - name: Set ICR endpoint for private registry
+      shell: bash
+      run: |
+        echo "ICR_ENDPOINT=private.$(ibmcloud cr region | grep -i 'icr.io' | cut -d "'" -f4)" >> $GITHUB_ENV
+
+
+
+    - name: Create or use Code Engine registry secret
+      shell: bash
+      id: cr_secret
+      run: |
+        if ibmcloud ce secret get --name "${{ inputs.workload_name }}-ce-cr-secret" > /dev/null 2>&1; then 
+          echo "registry_secret=--registry-secret ${{ inputs.workload_name }}-ce-cr-secret" >> "$GITHUB_OUTPUT"
+        else
+          ibmcloud ce registry create --name ${{ inputs.workload_name }}-ce-cr-secret --username iamapikey --password ${{ inputs.ibmcloud_api_key }} --server ${{ env.ICR_ENDPOINT }} --email githubaction@example.com
+
+          echo "registry_secret=--registry-secret ${{ inputs.workload_name }}-ce-cr-secret" >> "$GITHUB_OUTPUT"
         fi
 
     # Set cpu, memory, and custom arg defaults for workloads
@@ -116,7 +160,7 @@ runs:
           echo "workload_arg=" >> "$GITHUB_OUTPUT"
         fi
 
-    # Functions deployment or update steps
+    # # Functions deployment or update steps
     - name: Create or update code engine serverless function
       shell: bash
       id: ce-fn
@@ -129,7 +173,7 @@ runs:
           ibmcloud ce fn create --name ${{ inputs.workload_name }} --runtime ${{ inputs.function_runtime }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }}
         fi
 
-    # Application deployment or update steps
+    # # Application deployment or update steps
     - name: Create or update code engine application
       shell: bash
       id: ce-app
@@ -137,9 +181,9 @@ runs:
       run: |
 
         if ibmcloud ce application get --name ${{ inputs.workload_name }} ; then
-          ibmcloud ce application update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} --port ${{ inputs.workload_port }} ${{ steps.set_workload_resources.outputs.workload_arg }}
+          ibmcloud ce application update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} --port ${{ inputs.workload_port }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.registry_image }} ${{ steps.cr_secret.outputs.registry_secret }}
         else
-          ibmcloud ce application create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }}
+          ibmcloud ce application create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.registry_image }} ${{ steps.cr_secret.outputs.registry_secret }}
         fi
 
     # Job deployment or update steps
@@ -150,9 +194,9 @@ runs:
       run: |
 
         if ibmcloud ce job get --name ${{ inputs.workload_name }} ; then
-          ibmcloud ce job update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }}
+          ibmcloud ce job update --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.registry_image }} ${{ steps.cr_secret.outputs.registry_secret }}
         else
-          ibmcloud ce job create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }}
+          ibmcloud ce job create --name ${{ inputs.workload_name }} --build-source ${{ inputs.build_source }} --wait ${{ steps.set_workload_resources.outputs.workload_cpu }} ${{ steps.set_workload_resources.outputs.workload_memory }} ${{ steps.set_workload_resources.outputs.workload_arg }} ${{ steps.login_to_cr.outputs.registry_image }} ${{ steps.cr_secret.outputs.registry_secret }}
         fi
     
     - name: Get workload_type 
